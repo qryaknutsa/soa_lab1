@@ -1,0 +1,835 @@
+openapi: 3.0.0
+info:
+  title: Ticket Management API
+  version: 1.0.0
+  description: API для управления билетами и связанных операций.
+servers:
+  - url: http://TMA/api/v2
+
+paths:
+  /enums/{enumType}:
+    get:
+      summary: Получить значения данного Enum
+      tags:
+        - Enums
+      parameters:
+        - name: enumType
+          in: path
+          required: true
+          description: Тип Enum
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Успешный ответ с значениями Enum
+          content:
+            application/json:
+              examples:
+                TicketTypeExample:
+                  summary: TicketType Enum Example
+                  value:
+                    enum:
+                      - CHEAP
+                      - BUDGETARY
+                      - USUAL
+                      - VIP
+                HairColorExample:
+                  summary: HairColor Enum Example
+                  value:
+                    enum:
+                      - RED
+                      - BLACK
+                      - BLUE
+                      - ORANGE
+                      - WHITE
+                EyeColorExample:
+                  summary: EyeColor Enum Example
+                  value:
+                    enum:
+                      - GREEN
+                      - RED
+                      - BLUE
+                CountryExample:
+                  summary: Country Enum Example
+                  value:
+                    enum:
+                      - CHINA
+                      - NORTH_KOREA
+                      - JAPAN
+
+        '400':
+          description: Неверный запрос (некорректный EnumType)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_id:
+                  summary: Некорректный EnumType
+                  value:
+                    title: "Некорректный EnumType"
+                    detail: "ID билета должен быть положительным числом."
+                    instance: "/enums/{enumType}"
+
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                server_error:
+                  summary: Внутренняя ошибка сервера
+                  value:
+                    title: "Внутренняя ошибка сервера"
+                    detail: "Произошла внутренняя ошибка на сервере."
+                    instance: "/enums/{enumType}"
+
+  /tickets:
+    get:
+      summary: Получить массив билетов
+      tags:
+        - Билеты
+      parameters:
+        - name: size
+          in: query
+          description: Размер страницы (по умолчанию 10)
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 10
+        - name: page
+          in: query
+          description: Номер страницы для постраничного вывода (по умолчанию 1)
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 1
+        - name: sort
+          in: query
+          description: 'Поля для сортировки (например, name, price). Укажите направление сортировки: `asc` (возрастание) или `desc` (убывание). Если направление сортировки не указано, по умолчанию будет `asc`. Пример: `sort=name,price:asc` или `sort=price:desc`'
+          required: false
+          schema:
+            type: string
+            default: 'id:asc'
+        - name: filter
+          in: query
+          description:
+            'Условия фильтрации (например, type=VIP). Пример: `filter=price>100,type=VIP`. Поддерживаемые операторы: `=`, `!=`, `<`, `<=`, `>`, `>=`, `contains`'
+          required: false
+          schema:
+            type: string
+            default: ''
+      responses:
+        '200':
+          description: Успешный ответ с массивом билетов
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  current_page:
+                    type: integer
+                    description: Номер страницы
+                    example: 1
+                  last_page:
+                    type: integer
+                    description: Послядняя страница
+                    example: 10
+                  element:
+                    type: integer
+                    description: Билет в странице
+                    example: 1
+                  tickets:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Ticket'
+
+
+
+        '400':
+          description: Неверный запрос (некорректные параметры)
+          content:
+            application/json:
+              schema:
+                type: object
+                items:
+                  $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_parameter:
+                  summary: Некорректный параметр запроса
+                  value:
+                    title: "Некорректный параметр запроса"
+                    detail: "Параметр 'size' должен быть положительным числом."
+                    instance: "/tickets"
+
+        '404':
+          description: Билеты не найдены
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                tickets_not_found:
+                  summary: Билеты не найдены
+                  value:
+                    title: "Билеты не найдены"
+                    detail: "По вашему запросу билеты не найдены."
+                    instance: "/tickets"
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                server_error:
+                  summary: Внутренняя ошибка сервера
+                  value:
+                    title: "Внутренняя ошибка сервера"
+                    detail: "Произошла внутренняя ошибка на сервере."
+                    instance: "/tickets"
+
+    post:
+      summary: Добавить новый билет
+      tags:
+        - Билеты
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TicketInput'
+      responses:
+        '201':
+          description: Билет успешно создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+        '400':
+          description: Неверный запрос (некорректные данные)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ErrorResponseArray'
+              examples:
+                invalid_input:
+                  summary: Некорректные данные
+                  value:
+                    title: "Некорректные данные"
+                    detail:
+                      type: array
+                      items:
+                        - type: string
+                          description: Поле 'price' обязательно для заполнения."
+                        - type: string
+                          description: Поле 'name' обязательно для заполнения."
+                    instance: "/tickets"
+        '422':
+          description: Ошибка валидации данных
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ErrorResponseArray'
+              examples:
+                validation_error:
+                  summary: Ошибка валидации данных
+                  value:
+                    title: Ошибка валидации данных
+                    detail:
+                      type: array
+                      items:
+                        - type: string
+                          description: Поле 'price' не может быть отрицательным."
+                        - type: string
+                          description: Поле 'discount' не может быть отрицательным."
+                    instance: "/tickets"
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                server_error:
+                  summary: Внутренняя ошибка сервера
+                  value:
+                    title: "Внутренняя ошибка сервера"
+                    detail: "Произошла внутренняя ошибка на сервере."
+                    instance: "/tickets"
+
+  /tickets/{id}:
+    get:
+      summary: Получить билет по ID
+      tags:
+        - Билеты
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID билета
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Успешный ответ с данными билета
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+        '400':
+          description: Неверный запрос (некорректный ID)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_id:
+                  summary: Некорректный ID
+                  value:
+                    title: "Некорректный ID"
+                    detail: "ID билета должен быть положительным числом."
+                    instance: "/tickets/{id}"
+
+        '404':
+          description: Билет не найден
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ticket_not_found:
+                  summary: Билет не найден
+                  value:
+                    title: "Билет не найден"
+                    detail: "Билет с данным ID не найден."
+                    instance: "/tickets/{id}"
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                server_error:
+                  summary: Внутренняя ошибка сервера
+                  value:
+                    title: "Внутренняя ошибка сервера"
+                    detail: "Произошла внутренняя ошибка на сервере."
+                    instance: "/tickets/{id}"
+
+    patch:
+      summary: Обновить билет по ID
+      tags:
+        - Билеты
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID билета для обновления
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TicketInput'
+      responses:
+        '200':
+          description: Билет успешно обновлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+        '400':
+          description: Неверный синтаксис или формат данных
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ErrorResponseArray'
+              examples:
+                invalid_id:
+                  summary: Некорректный ID
+                  value:
+                    title: "Некорректный ID"
+                    detail:
+                      type: array
+                      items:
+                        - type: string
+                          description: Поле 'price' обязательно для заполнения."
+                        - type: string
+                          description: Поле 'name' обязательно для заполнения."
+                      instance: "/tickets/{id}"
+        '404':
+          description: Билет не найден
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ticket_not_found:
+                  summary: Билет не найден
+                  value:
+                    title: "Билет не найден"
+                    detail: "Билет с данным ID не найден."
+                    instance: "/tickets/{id}"
+        '422':
+          description: Ошибка валидации данных
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ErrorResponseArray'
+              examples:
+                validation_error:
+                  summary: Ошибка валидации данных
+                  value:
+                    title: "Ошибка валидации данных"
+                    detail:
+                      type: array
+                      items:
+                        - type: string
+                          description: Поле 'price' не может быть отрицательным."
+                        - type: string
+                          description: Поле 'discount' не может быть отрицательным."
+                    instance: "/tickets/{id}"
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                server_error:
+                  summary: Внутренняя ошибка сервера
+                  value:
+                    title: "Внутренняя ошибка сервера"
+                    detail: "Произошла внутренняя ошибка на сервере."
+                    instance: "/tickets/{id}"
+
+    delete:
+      summary: Удалить билет по ID
+      tags:
+        - Билеты
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID билета для удаления
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Билет успешно удален
+        '400':
+          description: Неверный запрос (некорректный ID)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_id:
+                  summary: Некорректный ID
+                  value:
+                    title: "Некорректный ID"
+                    detail: "ID билета должен быть положительным числом."
+                    instance: "/tickets/{id}"
+        '404':
+          description: Билет не найден
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ticket_not_found:
+                  summary: Билет не найден
+                  value:
+                    title: "Билет не найден"
+                    detail: "Билет с данным ID не найден."
+                    instance: "/tickets/{id}"
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                server_error:
+                  summary: Внутренняя ошибка сервера
+                  value:
+                    title: "Внутренняя ошибка сервера"
+                    detail: "Произошла внутренняя ошибка на сервере."
+                    instance: "/tickets/{id}"
+
+  /tickets/discounts:
+    get:
+      summary: Рассчитать сумму значений поля discount для всех объектов.
+      tags:
+        - Дополнительные операции
+      responses:
+        '200':
+          description: Сумма значений discount
+          content:
+            application/json:
+              schema:
+                type: integer
+              example:
+                value: 150
+
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                server_error:
+                  summary: Внутренняя ошибка сервера
+                  value:
+                    title: "Внутренняя ошибка сервера"
+                    detail: "Произошла внутренняя ошибка на сервере."
+                    instance: "/tickets/discounts"
+
+  /tickets/types/less/{type}:
+    get:
+      summary: Вернуть количество объектов, значение поля type которых меньше заданного.
+      tags:
+        - Дополнительные операции
+      parameters:
+        - name: type
+          in: path
+          required: true
+          description: Тип билета для фильтрации (например, VIP)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Количество объектов с указанным типом
+          content:
+            application/json:
+              schema:
+                type: integer
+              example:
+                value: 10
+        '400':
+          description: Неверный запрос (некорректный тип билета)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_id:
+                  summary: Некорректный ID
+                  value:
+                    title: "Некорректный ID"
+                    detail: "ID билета должен быть положительным числом."
+                    instance: "/tickets/types/{type}"
+        '404':
+          description: Билеты указанного типа не найдены
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ticket_not_found:
+                  summary: Билет не найден
+                  value:
+                    title: "Билет не найден"
+                    detail: "Билет с данным ID не найден."
+                    instance: "/tickets/types/cheap"
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                server_error:
+                  summary: Внутренняя ошибка сервера
+                  value:
+                    title: "Внутренняя ошибка сервера"
+                    detail: "Произошла внутренняя ошибка на сервере."
+                    instance: "/tickets/types/{type}"
+
+  /tickets/types/unique:
+    get:
+      summary: Вернуть массив уникальных значений поля type по всем объектам.
+      tags:
+        - Дополнительные операции
+      responses:
+        '200':
+          description: Массив уникальных значений типа билета
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  value:
+                    type: array
+                    items:
+                      type: string
+              example:
+                value:
+                  - VIP
+                  - USUAL
+                  - BUDGETARY
+                  - CHEAP
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                server_error:
+                  summary: Внутренняя ошибка сервера
+                  value:
+                    title: "Внутренняя ошибка сервера"
+                    detail: "Произошла внутренняя ошибка на сервере."
+                    instance: "/tickets/types/unique"
+
+components:
+  schemas:
+    Ticket:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+          description: |
+            Поле не может быть null,
+            Значение поля должно быть больше 0,
+            Значение этого поля должно быть уникальным,
+            Значение этого поля должно генерироваться автоматически
+
+        name:
+          type: string
+          example: "Билет 1"
+          description: |
+            Поле не может быть null,
+            Значение поля должно быть больше 0,
+            Строка не может быть пустой
+
+        coordinates:
+          $ref: '#/components/schemas/Coordinates'
+
+        creationDate:
+          type: string
+          format: date-time
+          description: |
+            Поле не может быть null, 
+            Значение этого поля должно генерироваться автоматически
+          example: "2024-09-21T15:30:00+03:00"
+
+        price:
+          type: integer
+          description: Значение поля должно быть больше 0,
+          example: 2500
+
+        discount:
+          type: number
+          format: double
+          description: |
+            Значение поля должно быть больше 0,
+            Максимальное значение поля: 100
+          example: 10.0
+
+        refundable:
+          type: boolean
+          example: true
+
+        type:
+          $ref: '#/components/schemas/TicketType'
+
+        person:
+          $ref: '#/components/schemas/Person'
+      required:
+        - id
+        - name
+        - coordinates
+        - creationDate
+        - price
+
+    Coordinates:
+      type: object
+      properties:
+        x:
+          type: number
+          format: float
+          example: 132.23
+        y:
+          type: number
+          format: Float
+          description: Поле не может быть null
+          example: 321.12
+      required:
+        - y
+
+    Person:
+      type: object
+      properties:
+        height:
+          type: integer
+          description: Значение поля должно быть больше 0
+          example: 175
+        eyeColor:
+          $ref: '#/components/schemas/EyeColor'
+        hairColor:
+          $ref: '#/components/schemas/HairColor'
+        nationality:
+          $ref: '#/components/schemas/Country'
+        location:
+          $ref: '#/components/schemas/Location'
+      required:
+        - height
+        - hairColor
+        - location
+
+    Location:
+      type: object
+      properties:
+        x:
+          type: integer
+          description: Поле не может быть null
+          example: 123
+        y:
+          type: integer
+          example: 123
+        z:
+          type: number
+          format: double
+          description: Поле не может быть null
+          example: w.1
+        name:
+          type: string
+          description: Поле может быть null
+          example: Дом
+      required:
+        - x
+        - z
+
+    TicketType:
+      type: string
+      enum:
+        - VIP
+        - USUAL
+        - BUDGETARY
+        - CHEAP
+      example: USUAL
+
+    HairColor:
+      type: string
+      enum:
+        - RED
+        - BLACK
+        - BLUE
+        - ORANGE
+        - WHITE
+      example: BLACK
+
+    EyeColor:
+      type: string
+      enum:
+        - GREEN
+        - RED
+        - BLUE
+      example: BLUE
+
+    Country:
+      type: string
+      enum:
+        - CHINA
+        - NORTH_KOREA
+        - JAPAN
+      example: JAPAN
+
+    TicketInput:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Билет 1"
+        coordinates:
+          $ref: '#/components/schemas/Coordinates'
+        price:
+          type: integer
+          example: 2500
+        discount:
+          type: number
+          format: double
+          example: 10.0
+        refundable:
+          type: boolean
+          example: true
+        type:
+          $ref: '#/components/schemas/TicketType'
+        person:
+          $ref: '#/components/schemas/Person'
+
+
+    ErrorResponse:
+      type: object
+      properties:
+        title:
+          type: string
+          description: Краткое описание ошибки
+        detail:
+          type: string
+          description: Детализированное описание ошибки
+        instance:
+          type: string
+          format: uri
+          description: URL ресурса, вызвавшего ошибку
+      required:
+        - title
+        - detail
+        - instance
+
+    ErrorResponseArray:
+      type: object
+      properties:
+        title:
+          type: string
+          description: Краткое описание ошибки
+        instance:
+          type: string
+          format: uri
+          description: URL ресурса, вызвавшего ошибку
+        detail:
+          type: array
+          items:
+            type: string
+            description: Детализированное описание ошибки
+      required:
+        - title
+        - detail
+        - instance

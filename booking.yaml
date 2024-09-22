@@ -1,0 +1,435 @@
+openapi: 3.0.0
+info:
+  title: Ticket Management API
+  version: 1.0.0
+  description: API для управления билетами и связанных операций.
+servers:
+  - url: http://TMA/api/v2/booking/
+
+paths:
+
+  /sell/vip/{ticketId}/{personId}:
+    post:
+      summary: Скопировать указанный билет и создать VIP-билет с удвоенной ценой.
+      tags:
+        - Сервис 2
+      parameters:
+        - name: ticketId
+          in: path
+          required: true
+          description: ID билета
+          schema:
+            type: integer
+        - name: personId
+          in: path
+          required: true
+          description: ID человека
+          schema:
+            type: integer
+      responses:
+        '201':
+          description: VIP-билет успешно создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+        '400':
+          description: Неверный запрос
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ErrorResponseArray'
+              examples:
+                invalid_personId:
+                  summary: Некорректный ID человека
+                  value:
+                    - title: "Некорректный ID"
+                      detail: "Поле 'personId' должны быть положительными числами."
+                      instance: "/booking/sell/vip/{ticketId}/{personId}"
+                invalid_ticketId:
+                  summary: Некорректный ID билета
+                  value:
+                    - title: "Некорректный ID"
+                      detail: "Поле 'ticketId' должны быть положительными числами."
+                      instance: "/booking/sell/vip/{ticketId}/{personId}"
+        '404':
+          description: Билет или человек не найдены
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                ticket_not_found:
+                  summary: Билет не найден
+                  value:
+                    - title: "Билет не найден"
+                      detail:
+                        type: array
+                        items:
+                          - type: string
+                            description: "Человек с данным ID не найден."
+                      instance: "/booking/sell/vip/{ticketId}/{personId}"
+                person_not_found:
+                  summary: Человек и билет не найдены
+                  value:
+                    - title: "Человек и билет не найдены"
+                      detail:
+                        type: array
+                        items:
+                          - type: string
+                            description: "Человек с данным ID не найден."
+                          - type: string
+                            description: "Билет с данным ID не найден."
+                      instance: "/booking/sell/vip/{ticketId}/{personId}"
+
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                server_error:
+                  summary: Внутренняя ошибка сервера
+                  value:
+                    title: "Внутренняя ошибка сервера"
+                    detail: "Произошла внутренняя ошибка на сервере."
+                    instance: "/booking/sell/vip/{ticketId}/{personId}"
+        '503':
+          description: Сервер временно не доступен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                service_unavailable:
+                  summary: Сервер временно недоступен
+                  value:
+                    title: "Сервер временно недоступен"
+                    detail: "Сервер перегружен или проводится техническое обслуживание. Пожалуйста, попробуйте снова позже."
+                    instance: "/booking/sell/vip/{ticketId}/{personId}"
+
+  /event/{eventId}/cancel:
+    delete:
+      summary: Отменить указанное событие, удалив все билеты на него.
+      tags:
+        - Сервис 2
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          description: ID события для отмены
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Событие успешно отменено
+        '400':
+          description: Неверный синтаксис или формат ID события
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_event_id:
+                  summary: Некорректный ID события
+                  value:
+                    title: "Некорректный ID события"
+                    detail: "ID события должен быть положительным числом."
+                    instance: "/booking/event/{eventId}/cancel"
+
+        '404':
+          description: Событие не найдено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                not_found:
+                  summary: Событие не найдено
+                  value:
+                    title: "Событие не найдено"
+                    detail: "Событие с данным ID не найдено."
+                    instance: "/booking/event/{eventId}/cancel"
+
+        '422':
+          description: Логическая ошибка в ID события
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                logic_error:
+                  summary: Логическая ошибка
+                  value:
+                    title: "Логическая ошибка"
+                    detail: "Невозможно отменить событие, так как оно уже прошло."
+                    instance: "/booking/event/{eventId}/cancel"
+
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                server_error:
+                  summary: Внутренняя ошибка сервера
+                  value:
+                    title: "Внутренняя ошибка сервера"
+                    detail: "Произошла внутренняя ошибка на сервере."
+                    instance: "/booking/event/{eventId}/cancel"
+        '503':
+          description: Сервер временно не доступен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                service_unavailable:
+                  summary: Сервер временно недоступен
+                  value:
+                    title: "Сервер временно недоступен"
+                    detail: "Сервер перегружен или проводится техническое обслуживание. Пожалуйста, попробуйте снова позже."
+                    instance: "/booking/event/{eventId}/cancel"
+
+
+components:
+  schemas:
+    Ticket:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+          description: |
+            Поле не может быть null,
+            Значение поля должно быть больше 0,
+            Значение этого поля должно быть уникальным,
+            Значение этого поля должно генерироваться автоматически
+
+        name:
+          type: string
+          example: "Билет 1"
+          description: |
+            Поле не может быть null,
+            Значение поля должно быть больше 0,
+            Строка не может быть пустой
+
+        coordinates:
+          $ref: '#/components/schemas/Coordinates'
+
+        creationDate:
+          type: string
+          format: date-time
+          description: |
+            Поле не может быть null, 
+            Значение этого поля должно генерироваться автоматически
+          example: "2024-09-21T15:30:00+03:00"
+
+        price:
+          type: integer
+          description: Значение поля должно быть больше 0,
+          example: 2500
+
+        discount:
+          type: number
+          format: double
+          description: |
+            Значение поля должно быть больше 0,
+            Максимальное значение поля: 100
+          example: 10.0
+
+        refundable:
+          type: boolean
+          example: true
+
+        type:
+          $ref: '#/components/schemas/TicketType'
+
+        person:
+          $ref: '#/components/schemas/Person'
+      required:
+        - id
+        - name
+        - coordinates
+        - creationDate
+        - price
+
+
+    Event:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: "Уникальный идентификатор события"
+          example: 1
+        title:
+          type: string
+          description: "Название события"
+          example: "Концерт"
+        description:
+          type: string
+          description: "Описание события"
+          example: "Большой концерт популярных исполнителей."
+        startTime:
+          type: string
+          format: date-time
+          description: "Время начала события"
+          example: "2024-09-21T15:30:00+03:00"
+        endTime:
+          type: string
+          format: date-time
+          description: "Время окончания события"
+          example: "2024-09-21T18:30:00+03:00"
+        location:
+          $ref: '#/components/schemas/Location'
+        tickets:
+          type: array
+          items:
+            $ref: '#/components/schemas/Ticket'
+          description: "Список билетов, связанных с этим событием"
+      required:
+        - id
+        - title
+        - startTime
+        - endTime
+        - location
+    Coordinates:
+      type: object
+      properties:
+        x:
+          type: number
+          format: float
+          example: 132.23
+        y:
+          type: number
+          format: Float
+          description: Поле не может быть null
+          example: 321.12
+      required:
+        - y
+
+    Person:
+      type: object
+      properties:
+        height:
+          type: integer
+          description: Значение поля должно быть больше 0
+          example: 175
+        eyeColor:
+          $ref: '#/components/schemas/EyeColor'
+        hairColor:
+          $ref: '#/components/schemas/HairColor'
+        nationality:
+          $ref: '#/components/schemas/Country'
+        location:
+          $ref: '#/components/schemas/Location'
+      required:
+        - height
+        - hairColor
+        - location
+
+    Location:
+      type: object
+      properties:
+        x:
+          type: integer
+          description: Поле не может быть null
+          example: 123
+        y:
+          type: integer
+          example: 123
+        z:
+          type: number
+          format: double
+          description: Поле не может быть null
+          example: w.1
+        name:
+          type: string
+          description: Поле может быть null
+          example: Дом
+      required:
+        - x
+        - z
+
+    TicketType:
+      type: string
+      enum:
+        - VIP
+        - USUAL
+        - BUDGETARY
+        - CHEAP
+      example: USUAL
+
+    HairColor:
+      type: string
+      enum:
+        - RED
+        - BLACK
+        - BLUE
+        - ORANGE
+        - WHITE
+      example: BLACK
+
+    EyeColor:
+      type: string
+      enum:
+        - GREEN
+        - RED
+        - BLUE
+      example: BLUE
+
+    Country:
+      type: string
+      enum:
+        - CHINA
+        - NORTH_KOREA
+        - JAPAN
+      example: JAPAN
+
+    ErrorResponse:
+      type: object
+      properties:
+        title:
+          type: string
+          description: Краткое описание ошибки
+        detail:
+          type: string
+          description: Детализированное описание ошибки
+        instance:
+          type: string
+          format: uri
+          description: URL ресурса, вызвавшего ошибку
+      required:
+        - title
+        - detail
+        - instance
+
+    ErrorResponseArray:
+      type: object
+      properties:
+        title:
+          type: string
+          description: Краткое описание ошибки
+        instance:
+          type: string
+          format: uri
+          description: URL ресурса, вызвавшего ошибку
+        detail:
+          type: array
+          items:
+            type: string
+            description: Детализированное описание ошибки
+      required:
+        - title
+        - detail
+        - instance
